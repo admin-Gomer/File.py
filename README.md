@@ -20,7 +20,7 @@ _Этот бот для Telegram предназначен для загрузк�
 
 1. Клонируйте этот репозиторий на свой компьютер:
    ```bash
-   git clone https://github.com/ваше_имя_пользователя/telegram-apk-bot.git
+   git clone https://github.com/admin-Gomer/.xxx.Bot
    cd telegram-apk-bot
    ```
 
