@@ -9,8 +9,6 @@ api_hash = "8dbce7bed757e9e1ddfedad1e9c680d2" # Замените на свой
 bot_token = "8503713213:AAFw2fj83nqOTIGz6XBEfYfNYs0P3DvKNxY"  # Замените на токен вашего бота
 bot_username = "M_FileBot"    # Имя вашего бота (без @)
 
-# Укажите свой user_id и ник
-ADMIN_USER_ID = 1129009422  # Замените на ваш user_id
 SIGNATURE = "@ANDRO_FILE"  # Замените на ваш ник или имя
 
 app = Client(
@@ -36,16 +34,9 @@ def save_db(db):
     with open(DB_FILE, "w", encoding="utf-8") as f:
         json.dump(db, f)
 
-# Проверка пользователя
-def check_admin(user_id):
-    return user_id == ADMIN_USER_ID
-
 # Обработчик новых сообщений с документами
 @app.on_message(filters.document & filters.private)
 def handle_apk(client, message):
-    if not check_admin(message.from_user.id):
-        return  # Игнорируем запросы от других пользователей
-
     if (
         message.document 
         and message.document.file_name 
@@ -84,9 +75,6 @@ def handle_apk(client, message):
 # Обработчик команды /list
 @app.on_message(filters.command("list") & filters.private)
 def list_files(client, message):
-    if not check_admin(message.from_user.id):
-        return  # Игнорируем запросы от других пользователей
-
     db = load_db()
     if db:
         response = "Список загруженных файлов:\n"
@@ -96,6 +84,59 @@ def list_files(client, message):
     else:
         message.reply("Нет загруженных файлов.")
 
+# Обработчик команды /info
+@app.on_message(filters.command("info") & filters.private)
+def file_info(client, message):
+    args = message.text.strip().split()
+    if len(args) == 2 and args[1].isdigit():
+        db = load_db()
+        file_key = args[1]
+        entry = db.get(file_key)
+        if entry:
+            client.send_message(
+                message.chat.id,
+                f"Файл: {entry['file_name']}\nID: {entry['file_id']}"
+            )
+        else:
+            message.reply("Файл не найден.")
+    else:
+        message.reply("Используйте: /info N, где N - номер файла.")
+
+# Обработчик команды /clear
+@app.on_message(filters.command("clear") & filters.private)
+def clear_files(client, message):
+    db = load_db()
+    if db:
+        os.remove(DB_FILE)
+        client.send_message(message.chat.id, "Все файлы были успешно удалены.")
+    else:
+        message.reply("База данных уже пуста.")
+
+# Обработчик команды /start
+@app.on_message(filters.command("start") & filters.private)
+def send_file(client, message):
+    args = message.text.strip().split()
+    if len(args) == 2 and args[1].isdigit():
+        db = load_db()
+        file_key = args[1]
+        entry = db.get(file_key)
+        if entry and "file_id" in entry:
+            # Добавляем подпись к отправляемому файлу
+            caption = f"Ваш файл: {entry.get('file_name', 'File')}\nПодпись: {SIGNATURE}"
+            client.send_document(
+                chat_id=message.chat.id,
+                document=entry["file_id"],
+                caption=caption
+            )
+        else:
+            message.reply("Файл не найден.")
+    else:
+        # Получаем имя пользователя
+        username = message.from_user.username if message.from_user.username else message.from_user.first_name
+        message.reply(f"Привет, {username}! Ну что, продолжим?")
+
+print("БОТ ЗАПУЩЕН!")
+app.run()
 # Обработчик команды /info
 @app.on_message(filters.command("info") & filters.private)
 def file_info(client, message):
